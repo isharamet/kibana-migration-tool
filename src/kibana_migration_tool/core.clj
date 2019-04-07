@@ -2,12 +2,13 @@
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :refer [join]]
+            [clojure.tools.cli :refer [parse-opts]]
             [clj-http.client :as client]
             [cheshire.core :refer :all])
   (:gen-class))
 
-(defn kibana-docs
-  "Fetches and returns all documents from `src` .kibana index."
+(defn read-es-docs
+  "Fetches and returns collection of all documents from `src` Elasticsearch instance."
   [src]
   (let [rs (client/get (str src "/.kibana/_search")
                        {:query-params {:size 10000}
@@ -34,15 +35,8 @@
       (do (.mkdirs path)
           (spit fname doc)))))
 
-(defn kibana-export
-  "Exports all documents from `scr` .kibana index and saves them in
-  specified `dst` directory."
-  [src dst]
-  (let [docs (kibana-docs src)]
-    (save docs dst)))
-
-(defn read-docs
-  "Returns lazy sequence with all the documents in `src` directory."
+(defn read-fs-docs
+  "Reads and returns lazy collection of all the documents from `src` directory."
   [src]
   (->> (io/file src)
        (file-seq)
@@ -61,21 +55,80 @@
                   {:doc (:_source doc)
                    :doc_as_upsert true}]))
        (map generate-string)
-       (join "\n")))
+       (join \newline)))
 
 (defn upsert-docs
   "Updates or inserts provided documents into `dst` Elasticsearch instance."
   [dst docs]
-  (let [body (to-bulk-update docs)
-        rs (client/post (str dst "/_bulk")
-                        {:body (str body "\n")
-                         :content-type :json
-                         :accept :json})]
-    rs))
+  (client/post (str dst "/_bulk")
+               {:body (str (to-bulk-update docs) \newline)
+                :content-type :json
+                :accept :json}))
 
-(defn kibana-import [src dst]
-  (let [docs (read-docs src)]
-    (upsert-docs dst docs)))
+(defn kibana-export
+  "Exports all documents from `src` .kibana index and saves them in
+  specified `dst` directory."
+  [{:keys [source destination]}]
+  (let [docs (read-es-docs source)]
+    (save docs destination)))
 
-(defn -main []
-  (println "It works!"))
+(defn kibana-import
+  "Imports all documents in `src` folder into `dst` Elasticsearch instance."
+  [{:keys [source destination]}]
+  (let [docs (read-fs-docs source)]
+    (upsert-docs destination docs)))
+
+(def cli-options
+  [["-s" "--source SRC"]
+   ["-d" "--destination DST"]
+   ["-h" "--help"]])
+
+(defn usage [options-summary]
+  (->> ["Kibana Migration Tool."
+        ""
+        "Usage: kmt action [options]"
+        ""
+        "Options:"
+        options-summary
+        ""
+        "Actions:"
+        "  export   Start a new server"
+        "  import   Stop an existing server"
+        ""]
+       (join \newline)))
+
+(defn error-msg [errors]
+  (str "The following errors occurred while parsing your command:\n\n"
+       (join \newline errors)))
+
+(defn exit [status msg]
+  (println msg)
+  (System/exit status))
+
+(defn validate-args
+  "Validate command line arguments. Either return a map indicating the program
+  should exit (with a error message, and optional ok status), or a map
+  indicating the action the program should take and the options provided."
+  [args]
+  (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
+    (cond
+      (:help options)
+      {:exit-message (usage summary) :ok? true}
+
+      errors
+      {:exit-message (error-msg errors)}
+
+      (and (= 1 (count arguments))
+           (#{"export" "import"} (first arguments)))
+      {:action (first arguments) :options options}
+
+      :else
+      {:exit-message (usage summary)})))
+
+(defn -main [& args]
+  (let [{:keys [action options exit-message ok?]} (validate-args args)]
+     (if exit-message
+       (exit (if ok? 0 1) exit-message)
+       (case action
+         "export" (kibana-export options)
+         "import" (kibana-import options)))))
