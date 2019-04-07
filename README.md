@@ -13,7 +13,7 @@ $ lein uberjar
 Export:
 
 ```bash
-$ java -jar kmt.jar export --source "http://localhost:9200" --destination "/path/to/kibana"`
+$ java -jar kmt.jar export --source "http://localhost:9200" --destination "/path/to/kibana"
 ```
 
 Import:
