@@ -2,16 +2,25 @@
 
 Simple library for performing Kibana saved objects migration between different instances.
 
+## Building
+
+```bash
+$ lein uberjar
+```
 
 ## Usage
 
 Export:
 
-`kmt export --source "http://localhost:9200" --destination "/path/to/kibana"`
+```bash
+$ java -jar kmt.jar export --source "http://localhost:9200" --destination "/path/to/kibana"`
+```
 
 Import:
 
-`kmt import --source "/path/to/kibana" --destination "http://localhost:9200"`
+```bash
+$ java -jar kmt.jar import --source "/path/to/kibana" --destination "http://localhost:9200"
+```
 
 ## TODO
 
