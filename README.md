@@ -15,6 +15,6 @@ Import:
 
 ## TODO
 
-- [] Export specific objects with their dependencies
-- [] Add support for basic authentication
+- [ ] Export specific objects with their dependencies
+- [ ] Add support for basic authentication
 
