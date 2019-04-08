@@ -28,6 +28,7 @@ $ java -jar kmt.jar import --source "/path/to/kibana" --destination "http://loca
 
 ## TODO
 
-- [ ] Export specific objects with their dependencies
+- [x] Export specific objects with their dependencies
+- [ ] Trace Vega/Vega-Lite visualizations dependencies
 - [ ] Add support for basic authentication
 
