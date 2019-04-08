@@ -1,7 +1,8 @@
 (ns kibana-migration-tool.core
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :refer [join]]
+            [clojure.string :refer [join split]]
+            [clojure.set :refer [union]]
             [clojure.tools.cli :refer [parse-opts]]
             [clj-http.client :as client]
             [cheshire.core :refer :all])
@@ -65,22 +66,91 @@
                 :content-type :json
                 :accept :json}))
 
+(defn dashboard-panels
+  "Returns collection of maps with panel information for provided dashboard."
+  [doc]
+  (-> doc
+      (get-in [:_source :dashboard :panelsJSON])
+      (parse-string true)))
+
+(defn search-source
+  "Returns search source map for provided object."
+  [type doc]
+  (-> doc
+      (get-in [:_source type :kibanaSavedObjectMeta :searchSourceJSON])
+      (parse-string true)))
+
+(defn find-by-id
+  "Finds document by id in provided collection of documents."
+  [id docs]
+  (first (filter (fn [e] (= (:_id e) id)) docs)))
+
+(defn extract-dependencies [doc]
+  "Extracts all dependencies from given document."
+  (let [type (keyword (doc-type doc))
+        result #{}]
+    (case type
+      :dashboard
+      (->> doc
+           (dashboard-panels)
+           (map (fn [e] (str (:type e) ":" (:id e))))
+           (set))
+
+      (:visualization :search)
+      (let [source (search-source type doc)]
+        (if (empty? source)
+          result
+          #{(str "index-pattern:" (:index source))}))
+
+      result)))
+
+(defn find-dependencies
+  "Recursively traces all dependencies for the provided document in the
+  given list of documents and returns set of dependent document ids inclding
+  the id of initial document."
+  [doc docs]
+  (loop [xs [doc]
+         result #{(:_id doc)}]
+    (if (empty? xs)
+      result
+      (let [ds (reduce union (map extract-dependencies xs))
+            ddocs (map #(find-by-id % docs) ds)]
+        (recur ddocs (union result ds))))))
+
+(defn doc-filter [objs docs]
+  (let [ids (->> objs
+                 (map #(find-by-id % docs))
+                 (map #(find-dependencies % docs))
+                 (reduce union))]
+    (if (empty? ids)
+      (fn [doc] true)
+      (fn [doc] (contains? ids (:_id doc))))))
+
 (defn kibana-export
-  "Exports all documents from `src` .kibana index and saves them in
-  specified `dst` directory."
-  [{:keys [source destination]}]
-  (let [docs (read-es-docs source)]
-    (save docs destination)))
+  "Exports all documents (or ones listed in `objs`) from `src` .kibana index
+  and saves them in specified `dst` directory."
+  [src dst objs]
+  (let [docs (read-es-docs src)
+        f (doc-filter objs docs)]
+    (save (filter f docs) dst)))
 
 (defn kibana-import
-  "Imports all documents in `src` folder into `dst` Elasticsearch instance."
-  [{:keys [source destination]}]
-  (let [docs (read-fs-docs source)]
-    (upsert-docs destination docs)))
+  "Imports all documents  (or ones listed in `objs`) in `src` folder into
+  `dst` Elasticsearch instance."
+  [src dst objs]
+  (let [docs (read-fs-docs src)
+        f (doc-filter objs docs)]
+    (upsert-docs dst (filter f docs))))
 
 (def cli-options
-  [["-s" "--source SRC"]
-   ["-d" "--destination DST"]
+  [["-s" "--source SRC"
+    :id :src]
+   ["-d" "--destination DST"
+    :id :dst]
+   ["-o" "--objects OBJS"
+    :id :objs
+    :default []
+    :parse-fn #(split % #",")]
    ["-h" "--help"]])
 
 (defn usage [options-summary]
@@ -127,8 +197,14 @@
 
 (defn -main [& args]
   (let [{:keys [action options exit-message ok?]} (validate-args args)]
-     (if exit-message
-       (exit (if ok? 0 1) exit-message)
-       (case action
-         "export" (kibana-export options)
-         "import" (kibana-import options)))))
+    (if exit-message
+      (exit (if ok? 0 1) exit-message)
+      (let [{:keys [src dst objs]} options]
+        (case action
+          "export" (kibana-export src dst objs)
+          "import" (kibana-import src dst objs))))))
+
+;; ---------------------------------------------------------------------------
+
+
+
