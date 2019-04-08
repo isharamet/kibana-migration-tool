@@ -4,7 +4,7 @@ Simple library for performing Kibana saved objects migration between different i
 
 ## Rationale
 
-Even with recently-introduced saved object import/export functionality in Kibana currently there is no way to export import only subset of objects with all of their dependencies (please, see [issue 2730](https://github.com/elastic/kibana/issues/27306) ). So, there is a need (at least for me) for simple tool which will help doing such migrations. Also it will help with change tracking and object versioning since it exports each object into separate file.
+Even with recently-introduced saved object import/export functionality in Kibana, currently there is no way to export/import only subset of objects with all of their dependencies (please, see [issue 2730](https://github.com/elastic/kibana/issues/27306) ). Such functionality is crucial for saved objects migration between different Kibana instances (e.g. from `dev/staging` to `production`). So, there is a need (at least for me) for a simple tool which will help us with such migrations. Also it will be useful for change tracking and object versioning since it exports each object into separate file.
 
 ## Building
 
