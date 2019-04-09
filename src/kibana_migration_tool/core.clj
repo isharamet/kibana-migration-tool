@@ -144,10 +144,13 @@
 
 (def cli-options
   [["-s" "--source SRC"
+    "Source: Elasticsearch URI for export, path for import"
     :id :src]
    ["-d" "--destination DST"
+    "Destination: Path for export, Elasticsearch URI for import"
     :id :dst]
    ["-o" "--objects OBJS"
+    "Comma-separated list of saved object IDs to export/import"
     :id :objs
     :default []
     :parse-fn #(split % #",")]
@@ -162,8 +165,8 @@
         options-summary
         ""
         "Actions:"
-        "  export   Start a new server"
-        "  import   Stop an existing server"
+        "  export   Export saved objects"
+        "  import   Import saved objects"
         ""]
        (join \newline)))
 
