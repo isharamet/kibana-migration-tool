@@ -8,22 +8,39 @@ Even with recently-introduced saved object import/export functionality in Kibana
 
 ## Building
 
-```bash
+```
 $ lein uberjar
 ```
 
 ## Usage
 
-Export:
+Export all saved objects: 
 
-```bash
-$ java -jar kmt.jar export --source "http://localhost:9200" --destination "/path/to/kibana" --objects "dashboard:123456,search:23456"
+```shell
+$ java -jar kmt.jar export --source "http://localhost:9200"  --destination "/path/to/destination"
 ```
 
-Import:
+or only selected few:
 
-```bash
-$ java -jar kmt.jar import --source "/path/to/kibana" --destination "http://localhost:9200" --objects "dashboard:123456,search:23456"
+```shell
+$ java -jar kmt.jar export \
+    --source "http://localhost:9200" \
+    --destination "/path/to/destination" \
+    --objects "dashboard:9e29ff40-2d31-11e8-b55d-93e6c9341274,index-pattern:d72d7540-29ff-11e8-92d6-5fa606787d5c"
+```
+
+Import all saved objects:
+
+```shell
+$ java -jar kmt.jar import --source "/path/to/source" --destination "http://localhost:9200"
+```
+or only selected few:
+
+```shell
+$ java -jar kmt.jar import \
+    --source "/path/to/source" \
+    --destination "http://localhost:9200" \
+    --objects "dashboard:9e29ff40-2d31-11e8-b55d-93e6c9341274,index-pattern:d72d7540-29ff-11e8-92d6-5fa606787d5c"
 ```
 
 ## TODO
