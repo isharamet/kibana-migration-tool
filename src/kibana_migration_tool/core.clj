@@ -32,9 +32,9 @@
           doc docs]
     (let [path (io/file (str dst "/" type))
           id (:_id doc)
-          fname (str path "/" id ".edn")]
+          fname (str path "/" id ".json")]
       (do (.mkdirs path)
-          (spit fname doc)))))
+          (spit fname (generate-string doc))))))
 
 (defn read-fs-docs
   "Reads and returns lazy collection of all the documents from `src` directory."
@@ -43,7 +43,7 @@
        (file-seq)
        (filter #(.isFile %))
        (map slurp)
-       (map edn/read-string)))
+       (map #(parse-string % true))))
 
 (defn to-bulk-update
   "Transforms document collection to Elasticsearch bulk update body."

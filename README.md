@@ -46,5 +46,5 @@ $ java -jar kmt.jar import \
 ## TODO
 
 - [x] Export specific objects with their dependencies
+- [x] Export data in `JSON` format rather than `edn`
 - [ ] Add support for basic authentication
-- [ ] Add support for JSON as export format (alongside with edn)
