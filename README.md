@@ -14,6 +14,22 @@ $ lein uberjar
 
 ## Usage
 
+```shell
+Kibana Migration Tool.
+
+Usage: kmt action [options]
+
+Options:
+  -s, --source SOURCE                Source: Elasticsearch URI for export, path for import
+  -d, --destination DESTINATION      Destination: path for export, Elasticsearch URI for import
+  -o, --objects OBJECTS          []  Comma-separated list of saved object IDs to export/import
+  -h, --help
+
+Actions:
+  export   Export saved objects
+  import   Import saved objects
+```
+
 Export all saved objects: 
 
 ```shell
