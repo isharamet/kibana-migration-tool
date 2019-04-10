@@ -14,7 +14,7 @@ $ lein uberjar
 
 ## Usage
 
-```shell
+```
 Kibana Migration Tool.
 
 Usage: kmt action [options]
@@ -32,13 +32,13 @@ Actions:
 
 Export all saved objects: 
 
-```shell
+```
 $ java -jar kmt.jar export --source "http://localhost:9200"  --destination "/path/to/destination"
 ```
 
 or only selected few:
 
-```shell
+```
 $ java -jar kmt.jar export \
     --source "http://localhost:9200" \
     --destination "/path/to/destination" \
@@ -47,12 +47,12 @@ $ java -jar kmt.jar export \
 
 Import all saved objects:
 
-```shell
+```
 $ java -jar kmt.jar import --source "/path/to/source" --destination "http://localhost:9200"
 ```
 or only selected few:
 
-```shell
+```
 $ java -jar kmt.jar import \
     --source "/path/to/source" \
     --destination "http://localhost:9200" \
