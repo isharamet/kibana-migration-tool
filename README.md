@@ -46,6 +46,5 @@ $ java -jar kmt.jar import \
 ## TODO
 
 - [x] Export specific objects with their dependencies
-- [ ] Trace Vega/Vega-Lite visualizations dependencies
 - [ ] Add support for basic authentication
-
+- [ ] Add support for JSON as export format (alongside with edn)

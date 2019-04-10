@@ -143,13 +143,13 @@
     (upsert-docs dst (filter f docs))))
 
 (def cli-options
-  [["-s" "--source SRC"
+  [["-s" "--source SOURCE"
     "Source: Elasticsearch URI for export, path for import"
     :id :src]
-   ["-d" "--destination DST"
-    "Destination: Path for export, Elasticsearch URI for import"
+   ["-d" "--destination DESTINATION"
+    "Destination: path for export, Elasticsearch URI for import"
     :id :dst]
-   ["-o" "--objects OBJS"
+   ["-o" "--objects OBJECTS"
     "Comma-separated list of saved object IDs to export/import"
     :id :objs
     :default []
@@ -206,8 +206,4 @@
         (case action
           "export" (kibana-export src dst objs)
           "import" (kibana-import src dst objs))))))
-
-;; ---------------------------------------------------------------------------
-
-
 
