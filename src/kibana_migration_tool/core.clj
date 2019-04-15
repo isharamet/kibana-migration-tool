@@ -8,14 +8,55 @@
             [cheshire.core :refer :all])
   (:gen-class))
 
+(defn add-auth
+  "Adds authentication to the request if `auth` is a valid authentication object."
+  [rq auth]
+  (if (nil? auth)
+    rq
+    (let [{:keys [type auth]} auth]
+      (case type
+        :basic
+        (merge rq {:basic-auth auth})
+
+        rq))))
+
+(defn export-request
+  "Creates export request with given authentication method if `auth` is a vaild
+  authentication object."
+  [auth]
+  (let [rq {:query-params {:size 10000}
+            :body (generate-string {:query {:match_all {}}})
+            :content-type :json
+            :accept :json}]
+    (add-auth rq auth)))
+
+(defn to-bulk-update
+  "Transforms document collection to Elasticsearch bulk update body."
+  [docs]
+  (->> docs
+       (mapcat (fn [doc]
+                 [{:update {:_id (:_id doc)
+                            :_type "doc"
+                            :_index ".kibana"}}
+                  {:doc (:_source doc)
+                   :doc_as_upsert true}]))
+       (map generate-string)
+       (join \newline)))
+
+(defn import-request
+  "Creates import request from `docs` sequence with given authentication method if
+  `auth` is a valid authentication object."
+  [docs auth]
+  (let [rq {:body (str (to-bulk-update docs) \newline)
+            :content-type :json
+            :accept :json}]
+    (add-auth rq auth)))
+
 (defn read-es-docs
   "Fetches and returns collection of all documents from `src` Elasticsearch instance."
-  [src]
-  (let [rs (client/get (str src "/.kibana/_search")
-                       {:query-params {:size 10000}
-                        :body (generate-string {:query {:match_all {}}})
-                        :content-type :json
-                        :accept :json})
+  [src auth]
+  (let [rs (client/get (str src "/.kibana/_search/")
+                       (export-request auth))
         body (parse-string (:body rs) true)
         hits (get-in body [:hits :hits])]
     hits))
@@ -45,26 +86,11 @@
        (map slurp)
        (map #(parse-string % true))))
 
-(defn to-bulk-update
-  "Transforms document collection to Elasticsearch bulk update body."
-  [docs]
-  (->> docs
-       (mapcat (fn [doc]
-                 [{:update {:_id (:_id doc)
-                            :_type "doc"
-                            :_index ".kibana"}}
-                  {:doc (:_source doc)
-                   :doc_as_upsert true}]))
-       (map generate-string)
-       (join \newline)))
-
 (defn upsert-docs
   "Updates or inserts provided documents into `dst` Elasticsearch instance."
-  [dst docs]
+  [dst docs & {:keys [auth]}]
   (client/post (str dst "/_bulk")
-               {:body (str (to-bulk-update docs) \newline)
-                :content-type :json
-                :accept :json}))
+               (import-request docs auth)))
 
 (defn dashboard-panels
   "Returns collection of maps with panel information for provided dashboard."
@@ -129,18 +155,18 @@
 (defn kibana-export
   "Exports all documents (or ones listed in `objs`) from `src` .kibana index
   and saves them in specified `dst` directory."
-  [src dst objs]
-  (let [docs (read-es-docs src)
+  [src dst & {:keys [objs auth]}]
+  (let [docs (read-es-docs src auth)
         f (doc-filter objs docs)]
     (save (filter f docs) dst)))
 
 (defn kibana-import
   "Imports all documents  (or ones listed in `objs`) in `src` folder into
   `dst` Elasticsearch instance."
-  [src dst objs]
+  [src dst & {:keys [objs auth]}]
   (let [docs (read-fs-docs src)
         f (doc-filter objs docs)]
-    (upsert-docs dst (filter f docs))))
+    (upsert-docs dst (filter f docs) :auth auth)))
 
 (def cli-options
   [["-s" "--source SOURCE"
@@ -150,10 +176,22 @@
     "Destination: path for export, Elasticsearch URI for import"
     :id :dst]
    ["-o" "--objects OBJECTS"
-    "Comma-separated list of saved object IDs to export/import"
+    "Objects: comma-separated list of saved object IDs to export/import"
     :id :objs
     :default []
+    :default-desc ""
     :parse-fn #(split % #",")]
+   ["-a" "--auth AUTH"
+    "Authentication: `username:password` - for basic auth"
+    :id :auth
+    :default nil
+    :default-desc ""]
+   ["-A" "--auth-type AUTH-TYPE"
+    "Authentication type: supported types: `basic`"
+    :id :auth-type
+    :default :basic
+    :default-desc "basic"
+    :parse-fn keyword]
    ["-h" "--help"]])
 
 (defn usage [options-summary]
@@ -202,8 +240,11 @@
   (let [{:keys [action options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)
-      (let [{:keys [src dst objs]} options]
+      (let [{:keys [src dst objs auth auth-type]} options
+            auth (if (nil? auth)
+                   nil
+                   {:type auth-type :auth auth})]
         (case action
-          "export" (kibana-export src dst objs)
-          "import" (kibana-import src dst objs))))))
+          "export" (kibana-export src dst :objs objs :auth auth)
+          "import" (kibana-import src dst :objs objs :auth auth))))))
 
