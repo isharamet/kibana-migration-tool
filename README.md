@@ -20,9 +20,11 @@ Kibana Migration Tool.
 Usage: kmt action [options]
 
 Options:
-  -s, --source SOURCE                Source: Elasticsearch URI for export, path for import
-  -d, --destination DESTINATION      Destination: path for export, Elasticsearch URI for import
-  -o, --objects OBJECTS          []  Comma-separated list of saved object IDs to export/import
+  -s, --source SOURCE                   Source: Elasticsearch URI for export, path for import
+  -d, --destination DESTINATION         Destination: path for export, Elasticsearch URI for import
+  -o, --objects OBJECTS                 Objects: comma-separated list of saved object IDs to export/import
+  -a, --auth AUTH                       Authentication: `username:password` - for basic auth
+  -A, --auth-type AUTH-TYPE      basic  Authentication type: supported types: `basic`
   -h, --help
 
 Actions:
@@ -63,4 +65,4 @@ $ java -jar kmt.jar import \
 
 - [x] Export specific objects with their dependencies
 - [x] Export data in `JSON` format rather than `edn`
-- [ ] Add support for basic authentication
+- [x] Add support for basic authentication
