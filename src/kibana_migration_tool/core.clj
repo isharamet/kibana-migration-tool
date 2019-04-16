@@ -75,7 +75,7 @@
           id (:_id doc)
           fname (str path "/" id ".json")]
       (do (.mkdirs path)
-          (spit fname (generate-string doc))))))
+          (spit fname (generate-string doc {:pretty true}))))))
 
 (defn read-fs-docs
   "Reads and returns lazy collection of all the documents from `src` directory."
