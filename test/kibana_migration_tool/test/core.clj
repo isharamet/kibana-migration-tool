@@ -113,3 +113,36 @@
           actual (c/search-source :a doc)]
       (is (= actual expected)))))
 
+(deftest extract-dependencies-test
+  (testing "for unknown type"
+    (let [doc {:_source {:a {:b "{\"_id\":\"a\",\"type\":\"b\"}"}}}]
+      (is (empty (c/extract-dependencies doc)))))
+
+  (testing "for dashboard"
+    (let [doc {:_source
+               {:type "dashboard"
+                :dashboard
+                {:panelsJSON "[{\"id\":\"a\",\"type\":\"b\"}]"}}}
+          expected #{"b:a"}
+          actual (c/extract-dependencies doc)]
+      (is (= actual expected))))
+
+  (testing "for visualisation"
+    (let [doc {:_source
+               {:type "visualization"
+                :visualization
+                {:kibanaSavedObjectMeta
+                 {:searchSourceJSON "{\"index\":\"c\"}"}}}}
+          expected #{"index-pattern:c"}
+          actual (c/extract-dependencies doc)]
+      (is (= actual expected))))
+
+  (testing "for search"
+    (let [doc {:_source
+               {:type "search"
+                :search
+                {:kibanaSavedObjectMeta
+                 {:searchSourceJSON "{\"index\":\"d\"}"}}}}
+          expected #{"index-pattern:d"}
+          actual (c/extract-dependencies doc)]
+      (is (= actual expected)))))
