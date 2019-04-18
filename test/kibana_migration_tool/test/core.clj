@@ -99,6 +99,16 @@
           actual (c/dashboard-panels doc)]
       (is (= actual expected)))))
 
+(deftest find-by-id-test
+  (let [docs [{:_id "a"}
+              {:_id "b"}
+              {:_id "c"}]]
+    (testing "with non-existent id "
+      (is (nil? (c/find-by-id "e" docs))))
+
+    (testing "with existent id"
+      (is (= (c/find-by-id "b" docs) {:_id "b"})))))
+
 (deftest search-source-test
   (testing "without search source"
     (let [doc {:a {:b :c}}]
