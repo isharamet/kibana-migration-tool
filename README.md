@@ -66,3 +66,5 @@ $ java -jar kmt.jar import \
 - [x] Export specific objects with their dependencies
 - [x] Export data in `JSON` format rather than `edn`
 - [x] Add support for basic authentication
+- [ ] Proper error handling
+- [ ] Delete index before import (?)
